@@ -1,27 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CEFR Level Test</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        .container { width: 50%; margin: auto; text-align: center; }
-        button { padding: 10px; margin-top: 10px; }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>English Level Test</h1>
-        <p><strong>Level: {{ level }}</strong></p>
-        <p><strong>{{ question.question }}</strong></p>
-        <form method="post">
-            {% for option in question.options %}
-                <label>
-                    <input type="radio" name="answer" value="{{ option }}" required> {{ option }}
-                </label><br>
-            {% endfor %}
-            <button type="submit">Next</button>
-        </form>
-    </div>
+    <h1>CEFR Level Test</h1>
+    {% if message %}
+        <p>{{ message }}</p>
+    {% endif %}
+    <form method="POST">
+        <p>{{ question.question }}</p>
+        {% for option in question.options %}
+            <input type="radio" name="answer" value="{{ option }}"> {{ option }}<br>
+        {% endfor %}
+        <button type="submit">Submit</button>
+    </form>
 </body>
 </html>
-

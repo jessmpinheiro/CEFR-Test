@@ -96,7 +96,8 @@ def init_db():
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
-    if "start_time" not in session:
+    # Ensure session variables are properly initialized
+    if "start_time" not in session or "test_questions" not in session:
         session["start_time"] = time.time()
         session["score"] = 0
         session["question_index"] = 0
@@ -105,6 +106,8 @@ def chat():
         all_questions = []
         for level in questions.values():
             all_questions.extend(level)
+
+        # Shuffle the questions and select 10
         session["test_questions"] = random.sample(all_questions, 10)
 
     if request.method == "POST":
@@ -127,6 +130,7 @@ def chat():
 
     return render_template("index.html", 
                            question=session["test_questions"][0])
+
 
 def determine_level():
     """Determines the user's CEFR level and saves the result in the database."""
