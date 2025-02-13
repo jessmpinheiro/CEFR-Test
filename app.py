@@ -2,9 +2,13 @@ from flask import Flask, render_template, request, session
 import time
 import random
 import sqlite3
+import os
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key"
+
+# Define the database path (temporary storage for Render)
+DB_PATH = "/tmp/test_results.db"
 
 # Predefined CEFR test questions (A1 to C2)
 questions = {
@@ -80,7 +84,7 @@ questions = {
 
 def init_db():
     """Creates the database table if it doesn't exist."""
-    conn = sqlite3.connect("test_results.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS results (
@@ -96,7 +100,6 @@ def init_db():
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
-    # Ensure session variables are properly initialized
     if "start_time" not in session or "test_questions" not in session:
         session["start_time"] = time.time()
         session["score"] = 0
@@ -107,37 +110,29 @@ def chat():
         for level in questions.values():
             all_questions.extend(level)
 
-        # Shuffle the questions and select 10
         session["test_questions"] = random.sample(all_questions, 10)
 
     if request.method == "POST":
         user_answer = request.form.get("answer")
         question_index = session["question_index"]
 
-        # Check if the answer is correct
         if user_answer == session["test_questions"][question_index]["answer"]:
             session["score"] += 1
 
-        # Move to the next question
         session["question_index"] += 1
 
-        # If all questions are answered, determine level
         if session["question_index"] >= len(session["test_questions"]):
             return determine_level()
 
-        return render_template("index.html", 
-                               question=session["test_questions"][session["question_index"]])
+        return render_template("index.html", question=session["test_questions"][session["question_index"]])
 
-    return render_template("index.html", 
-                           question=session["test_questions"][0])
-
+    return render_template("index.html", question=session["test_questions"][0])
 
 def determine_level():
     """Determines the user's CEFR level and saves the result in the database."""
     test_duration = round(time.time() - session["start_time"], 2)
     score = session["score"]
 
-    # Determine CEFR level based on score
     if score >= 9:
         level = "C2"
     elif score >= 7:
@@ -151,19 +146,17 @@ def determine_level():
     else:
         level = "A1"
 
-    # Save results in the database
-    conn = sqlite3.connect("test_results.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO results (score, level, duration) VALUES (?, ?, ?)", 
                    (score, level, test_duration))
     conn.commit()
     conn.close()
 
-    # Show the results to the user
     result_message = f"Your estimated English level is: {level}. You took {test_duration} seconds."
     session.clear()
     return render_template("result.html", message=result_message)
 
 if __name__ == "__main__":
-    init_db()  # Initialize the database when the app starts
-    app.run(debug=True)
+    init_db()
+    app.run(host="0.0.0.0", port=10000)
